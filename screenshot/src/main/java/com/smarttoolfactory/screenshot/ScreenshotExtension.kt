@@ -1,16 +1,18 @@
 package com.smarttoolfactory.screenshot
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
 import android.os.Handler
-import android.os.HandlerThread
 import android.os.Looper
 import android.view.PixelCopy
 import android.view.View
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.toAndroidRect
+
 
 fun View.screenshot(
     bounds: Rect
@@ -29,7 +31,7 @@ fun View.screenshot(
             // Above Android O not using PixelCopy throws exception
             // https://stackoverflow.com/questions/58314397/java-lang-illegalstateexception-software-rendering-doesnt-support-hardware-bit
             PixelCopy.request(
-                (this.context as Activity).window,
+                this.context.scanForActivity()?.window ?: throw RuntimeException("can not find window for context"),
                 bounds.toAndroidRect(),
                 bitmap,
                 {},
@@ -67,7 +69,7 @@ fun View.screenshot(
             // Above Android O not using PixelCopy throws exception
             // https://stackoverflow.com/questions/58314397/java-lang-illegalstateexception-software-rendering-doesnt-support-hardware-bit
             PixelCopy.request(
-                (this.context as Activity).window,
+                this.context.scanForActivity()?.window ?: throw RuntimeException("can not find window for context"),
                 bounds.toAndroidRect(),
                 bitmap,
                 {
@@ -151,3 +153,8 @@ fun View.screenshot(
     }
 }
 
+private fun Context.scanForActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> this.baseContext.scanForActivity() // If view are in a dialog, we need to keep looking up the activity.
+    else -> null
+}
